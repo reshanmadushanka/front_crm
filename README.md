@@ -21,7 +21,11 @@ npm run lint
 ```
 
 ### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
+See config file in src/router/Config.js
+
+Set your api path for API_URL
+
+Example API_URL: 'http://127.0.0.1:8000/api/'
 
 ## Default user credentials
 
