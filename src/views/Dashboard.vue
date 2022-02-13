@@ -303,6 +303,7 @@
 import axios from 'axios'
 import pagination from 'laravel-vue-pagination'
 var $ = require('jquery')
+var config = require('../router/Config')
 export default {
   name: 'Dashboard',
   components: {
@@ -329,7 +330,7 @@ export default {
   methods: {
     getCustomers: function () {
       axios
-        .get('http://abc_api.test/api/customers')
+        .get(config.API_URL + 'customers')
         .then((res) => {
           this.customers = res.data
         })
@@ -348,10 +349,7 @@ export default {
     },
     addCustomer: function () {
       axios
-        .post(
-          'http://abc_api.test/api/customers',
-          $('#customerForm').serialize()
-        )
+        .post(config.API_URL + 'customers', $('#customerForm').serialize())
         .then((res) => {
           if (res.data.status === 1) {
             this.$toasted.success(res.data.res, {
@@ -380,10 +378,7 @@ export default {
     },
     showCustomer: function (id) {
       axios
-        .get(
-          'http://abc_api.test/api/customers/' + id,
-          $('#customerForm').serialize()
-        )
+        .get(config.API_URL + 'customers/' + id, $('#customerForm').serialize())
         .then((res) => {
           this.customerData = res.data.data
         })
@@ -393,10 +388,7 @@ export default {
     },
     updateCustomer: function (id) {
       axios
-        .put(
-          'http://abc_api.test/api/customers/' + id,
-          $('#customerForm').serialize()
-        )
+        .put(config.API_URL + 'customers/' + id, $('#customerForm').serialize())
         .then((res) => {
           if (res.data.status === 1) {
             this.$toasted.success(res.data.res, {
@@ -419,7 +411,7 @@ export default {
     },
     deleteCustomer: function (id) {
       axios
-        .delete('http://abc_api.test/api/customers/' + id)
+        .delete(config.API_URL + 'customers/' + id)
         .then((res) => {
           if (res.data.status === 1) {
             this.$toasted.success(res.data.res, {
@@ -449,7 +441,7 @@ export default {
       formData.append('file', this.file)
       if (this.errors.length === 0) {
         axios
-          .post('http://abc_api.test/api/customers-import', formData)
+          .post(config.API_URL + 'customers-import', formData)
           .then((res) => {
             if (res.data.status === 1) {
               this.$toasted.success(res.data.res, {
@@ -475,7 +467,7 @@ export default {
     },
     search: function () {
       axios
-        .get('http://abc_api.test/api/customers?key=' + this.keyword)
+        .get(config.API_URL + 'customers?key=' + this.keyword)
         .then((response) => {
           this.customers = response.data
         })
@@ -494,7 +486,7 @@ export default {
     },
     async list (page = 1) {
       await axios
-        .get(`http://abc_api.test/api/customers?page=${page}`)
+        .get(config.API_URL + `customers?page=${page}`)
         .then((response) => {
           this.customers = response.data
         })

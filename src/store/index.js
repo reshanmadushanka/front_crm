@@ -3,7 +3,7 @@ import Vuex from 'vuex'
 import axios from 'axios'
 
 Vue.use(Vuex)
-
+var config = require('../router/Config')
 export default new Vuex.Store({
   state: {
     user: null
@@ -24,7 +24,7 @@ export default new Vuex.Store({
   actions: {
     login ({ commit }, credentials) {
       return axios
-        .post('http://abc_api.test/api/login', credentials)
+        .post(config.API_URL + 'login', credentials)
         .then(({ data }) => {
           commit('setUserData', data)
         })
