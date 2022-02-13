@@ -1,6 +1,20 @@
 <template>
   <div class="container">
     <h1>Customer List</h1>
+    <div class="col-md-6 mb-3">
+      <form class="d-flex">
+        <input
+          v-model="keyword"
+          class="form-control me-2"
+          type="search"
+          placeholder="Search"
+          aria-label="Search"
+        />
+        <button class="btn btn-outline-success" @click.prevent="search()">
+          Search
+        </button>
+      </form>
+    </div>
     <div class="col-md-3 ms-auto">
       <button
         class="btn btn-primary"
@@ -28,7 +42,7 @@
         <th>Action</th>
       </thead>
       <tbody>
-        <tr v-for="(customer, index) in customers" :key="index">
+        <tr v-for="(customer, index) in customers.data" :key="index">
           <td>{{ customer.id }}</td>
           <td>{{ customer.email }}</td>
           <td>{{ customer.first_name }}</td>
@@ -57,6 +71,11 @@
         </tr>
       </tbody>
     </table>
+    <pagination
+      align="center"
+      :data="customers"
+      @pagination-change-page="list"
+    ></pagination>
     <div
       class="modal fade"
       id="customerFormModal"
@@ -246,17 +265,16 @@
             <div class="row">
               <div class="col-md-12 mb-3">
                 <div class="float-start">
-                  <small
-                    >CSV Header Row Format: first_name, last_name, address1,
-                    address2, city, email, phone</small
+                  <a href="/src/assets/Customer.csv" download
+                    >Download Sample CSV file</a
                   >
                 </div>
-                <div class="float-start">
+                <!-- <div class="float-start">
                   <small
                     >(If you have multiple phone numbers, add them comma
                     separated in the phone column)</small
                   >
-                </div>
+                </div> -->
               </div>
             </div>
           </div>
@@ -283,14 +301,17 @@
 </template>
 <script>
 import axios from 'axios'
+import pagination from 'laravel-vue-pagination'
 var $ = require('jquery')
 export default {
   name: 'Dashboard',
+  components: {
+    pagination
+  },
   data () {
     return {
       customers: [],
       Update: false,
-      errors: [],
       file: '',
       customerData: {
         phones: [
@@ -299,8 +320,7 @@ export default {
           }
         ]
       },
-      searchText: null,
-      emailPattern: /^\b[A-Z0-9._%-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b$/i
+      keyword: null
     }
   },
   mounted () {
@@ -311,10 +331,10 @@ export default {
       axios
         .get('http://abc_api.test/api/customers')
         .then((res) => {
-          this.customers = res.data.data
+          this.customers = res.data
         })
         .catch((error) => {
-          console.error(error)
+          console.log(error)
         })
     },
     addRaw: function () {
@@ -333,11 +353,29 @@ export default {
           $('#customerForm').serialize()
         )
         .then((res) => {
-          this.getCustomers()
-          this.resetCustomerForm()
+          if (res.data.status === 1) {
+            this.$toasted.success(res.data.res, {
+              theme: 'toasted-primary',
+              position: 'top-right',
+              duration: 1000
+            })
+            this.getCustomers()
+            this.resetCustomerForm()
+          } else {
+            this.$toasted.error(res.data.res, {
+              theme: 'toasted-primary',
+              position: 'top-right',
+              duration: 1000
+            })
+          }
         })
         .catch((error) => {
           console.error(error)
+          this.$toasted.error('Error', {
+            theme: 'toasted-primary',
+            position: 'top-right',
+            duration: 1000
+          })
         })
     },
     showCustomer: function (id) {
@@ -360,7 +398,20 @@ export default {
           $('#customerForm').serialize()
         )
         .then((res) => {
-          this.getCustomers()
+          if (res.data.status === 1) {
+            this.$toasted.success(res.data.res, {
+              theme: 'toasted-primary',
+              position: 'top-right',
+              duration: 1000
+            })
+            this.getCustomers()
+          } else {
+            this.$toasted.error(res.data.res, {
+              theme: 'toasted-primary',
+              position: 'top-right',
+              duration: 1000
+            })
+          }
         })
         .catch((error) => {
           console.error(error)
@@ -370,78 +421,67 @@ export default {
       axios
         .delete('http://abc_api.test/api/customers/' + id)
         .then((res) => {
-          this.getCustomers()
+          if (res.data.status === 1) {
+            this.$toasted.success(res.data.res, {
+              theme: 'toasted-primary',
+              position: 'top-right',
+              duration: 1000
+            })
+            this.getCustomers()
+          } else {
+            this.$toasted.error(res.data.res, {
+              theme: 'toasted-primary',
+              position: 'top-right',
+              duration: 1000
+            })
+          }
         })
         .catch((error) => {
           console.error(error)
         })
     },
-    handleFileUpload () {
+    handleFileUpload: function () {
       this.file = this.$refs.file.files[0]
     },
-    searchCustomers () {
-      var term = this.searchText ? this.searchText : 'all'
-      axios
-        .get('http://localhost:8000/api/v1/search_customers/' + term)
-        .then((response) => {
-          var result = response.data
-          console.log(result)
-          this.customerData = result
-        })
-        .catch(function (error) {
-          console.log(error)
-        })
-    },
-    uploadCSV () {
+    uploadCSV: function () {
       this.errors = []
-      if (!$('#file').val()) this.errors.push('File is required')
-
       const formData = new FormData()
       formData.append('file', this.file)
-
       if (this.errors.length === 0) {
         axios
-          .post('http://localhost:8000/api/v1/upload_csv', formData, {
-            headers: {
-              'Content-Type': 'multipart/form-data'
-            }
-          })
-          .then((response) => {
-            var result = response.data
-            console.log(result)
-            if (result.status === 1) {
-              $('.success-message').html(result.res)
-              $('.success-message').show()
-              setTimeout(() => {
-                $('.success-message').hide()
-              }, 2000)
-              this.file = ''
+          .post('http://abc_api.test/api/customers-import', formData)
+          .then((res) => {
+            if (res.data.status === 1) {
+              this.$toasted.success(res.data.res, {
+                theme: 'toasted-primary',
+                position: 'top-right',
+                duration: 1000
+              })
               this.getCustomers()
             } else {
-              $('.fail-message').html(result.res)
-              $('.fail-message').show()
-              setTimeout(() => {
-                $('.fail-message').hide()
-              }, 2000)
+              this.$toasted.error(res.data.res, {
+                theme: 'toasted-primary',
+                position: 'top-right',
+                duration: 1000
+              })
             }
           })
           .catch(function (error) {
             if (error.response) {
-              // The request was made and the server responded with a status code
-              console.log('error.response.data')
-              console.log(error.response.data)
-              console.log(error.response.status)
-              console.log(error.response.headers)
-            } else if (error.request) {
-              // The request was made but no response was received
-              console.log('error.request')
-              console.log(error.request)
-            } else {
-              // Something happened in setting up the request that triggered an Error
-              console.log('Error', error.message)
+              console.log(error.response)
             }
           })
       }
+    },
+    search: function () {
+      axios
+        .get('http://abc_api.test/api/customers?key=' + this.keyword)
+        .then((response) => {
+          this.customers = response.data
+        })
+        .catch(function (error) {
+          console.log(error)
+        })
     },
     resetCustomerForm: function () {
       this.customerData = {
@@ -451,6 +491,16 @@ export default {
           }
         ]
       }
+    },
+    async list (page = 1) {
+      await axios
+        .get(`http://abc_api.test/api/customers?page=${page}`)
+        .then((response) => {
+          this.customers = response.data
+        })
+        .catch(function (error) {
+          console.log(error)
+        })
     }
   }
 }
